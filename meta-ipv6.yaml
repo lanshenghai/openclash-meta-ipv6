@@ -1,0 +1,234 @@
+# OpenClash / Mihomo sample — sanitized for public sharing.
+# Replace REPLACE_* placeholders before use. See README.md / APPLY.md.
+mode: rule
+allow-lan: true
+routing-mark: 0xff
+bind-address: '*'
+ipv6: true
+external-controller: 0.0.0.0:9090
+external-ui: "/usr/share/openclash/ui"
+secret: REPLACE_DASHBOARD_SECRET
+dns:
+  enable: true
+  # geosite:cn 等 filter 域名仍返回真实 AAAA；无 fake-ip-range6 则 fake-ip 域名不下发 AAAA
+  ipv6: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  # 非 ULA，降低部分 Windows 丢弃 AAAA 的概率（勿用 fdfe: ULA）
+  fake-ip-range6: 2a0f:fafa:cafe::/64
+  listen: 0.0.0.0:7874
+  respect-rules: true
+  nameserver-policy:
+    geosite:cn:
+      - 202.101.172.35
+      - 202.101.172.46
+      - 114.114.114.114
+      - 223.5.5.5
+  direct-nameserver:
+    - 202.101.172.35
+    - 202.101.172.46
+    - 114.114.114.114
+    - 223.5.5.5
+  nameserver:
+    - 202.101.172.35
+    - 202.101.172.46
+    - 114.114.114.114
+    - 223.5.5.5
+  fallback:
+    - https://dns.cloudflare.com/dns-query
+    - tls://dns.google:853
+    - https://1.1.1.1/dns-query
+  fake-ip-filter:
+    - "*.lan"
+    - "+.ntp.org"
+    - "+.cibntv.net"
+    - "*.mqtt.iothub.aliyuncs.com"
+    - "+.azurefd.net"
+    - "+.t-msedge.net"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    # 按需保留办公/厂商内网（可删）
+    - "+.nokia-sbell.com"
+    - "+.nokia.com"
+    - "+.nsn-intra.net"
+    - "+.nsn-net.net"
+    - "+.pushnp.svc.ms"
+    - "+.live.com"
+    - "+.sharepoint.com"
+    - "+.cloudapp.azure.com"
+    - "+.office.net"
+    - "+.office.com"
+    - "+.windows.com"
+    - "+.office365.com"
+    - "+.trafficmanager.net"
+    # 必须 +. 才能覆盖 www/ipv6/ds 等子域
+    - "+.test-ipv6.com"
+    - geosite:cn
+  fake-ip-filter-mode: blacklist
+  proxy-server-nameserver:
+    - 202.101.172.35
+    - 202.101.172.46
+    - 114.114.114.114
+    - 223.5.5.5
+    - https://1.1.1.1/dns-query
+
+experimental:
+  sniff-tls-sni: true
+profile:
+  store-selected: true
+
+proxies: []
+proxy-providers:
+  provider1:
+    type: http
+    path: ./providers/provider1.yaml
+    url: "REPLACE_SUBSCRIPTION_URL_1"
+    interval: 3600
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+  provider2:
+    type: http
+    path: ./providers/provider2.yaml
+    url: "REPLACE_SUBSCRIPTION_URL_2"
+    interval: 3600
+    health-check:
+      enable: true
+      url: http://www.gstatic.com/generate_204
+      interval: 300
+
+proxy-groups:
+  - name: 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 300
+    timeout: 3000
+    tolerance: 50
+    lazy: true
+    exclude-filter: "(?i)剩余|到期|官网|更新|过期|流量|应急|测试|丢失|失败|通知|试用|下载|重置|刷新|电报|http|套餐|到期时间|[2-9]x|倍"
+    use:
+      - provider1
+      - provider2
+
+  - name: 代理
+    type: select
+    proxies:
+      - 自动选择
+      - DIRECT
+
+rule-providers:
+  Reject:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Reject.yaml
+    path: ./rule_provider/Reject
+    interval: 86400
+  AppleMusic:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Apple%20Music.yaml
+    path: ./rule_provider/Apple_Music
+    interval: 86400
+  AppleTV:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/Apple%20TV.yaml
+    path: ./rule_provider/Apple_TV
+    interval: 86400
+  Apple:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Apple.yaml
+    path: ./rule_provider/Apple
+    interval: 86400
+  GoogleFCM:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Google%20FCM.yaml
+    path: ./rule_provider/GoogleFCM
+    interval: 86400
+  YouTube:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Media/YouTube.yaml
+    path: ./rule_provider/YouTube
+    interval: 86400
+  Telegram:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Telegram.yaml
+    path: ./rule_provider/Telegram
+    interval: 86400
+  PROXY:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Proxy.yaml
+    path: ./rule_provider/Proxy
+    interval: 86400
+  Domestic:
+    type: http
+    behavior: classical
+    url: https://fastly.jsdelivr.net/gh/dler-io/Rules@main/Clash/Provider/Domestic.yaml
+    path: ./rule_provider/Domestic
+    interval: 86400
+
+rules:
+  - IP-CIDR6,fe80::/10,DIRECT
+  - IP-CIDR,198.18.0.1/16,REJECT,no-resolve
+  - IP-CIDR,127.0.0.0/8,DIRECT
+  - IP-CIDR,172.16.0.0/12,DIRECT
+  - IP-CIDR,192.168.0.0/16,DIRECT
+  - DST-PORT,123,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,ntp.org,DIRECT
+  - DOMAIN-SUFFIX,ntp.aliyun.com,DIRECT
+  - DOMAIN,time.android.com,DIRECT
+  - DOMAIN-SUFFIX,test-ipv6.com,DIRECT
+  - DOMAIN-SUFFIX,cibntv.net,DIRECT
+  - DOMAIN-SUFFIX,chinamobile.com,DIRECT
+  - DOMAIN-SUFFIX,t-msedge.net,DIRECT
+  - DOMAIN-SUFFIX,pushnp.svc.ms,DIRECT
+  - DOMAIN-SUFFIX,live.com,DIRECT
+  - DOMAIN-SUFFIX,sharepoint.com,DIRECT
+  - DOMAIN-SUFFIX,cloudapp.azure.com,DIRECT
+  - DOMAIN-SUFFIX,office.net,DIRECT
+  - DOMAIN-SUFFIX,office.com,DIRECT
+  - DOMAIN-SUFFIX,windows.com,DIRECT
+  - DOMAIN-SUFFIX,office365.com,DIRECT
+  - DOMAIN-SUFFIX,trafficmanager.net,DIRECT
+  - DOMAIN-SUFFIX,copilot.microsoft.com,代理
+  - DOMAIN-SUFFIX,microsoft.com,代理
+  - DOMAIN-SUFFIX,openai.com,代理
+  - DOMAIN-SUFFIX,chatgpt.com,代理
+  - DOMAIN-SUFFIX,oaistatic.com,代理
+  - DOMAIN-SUFFIX,ai.com,代理
+  - DOMAIN-SUFFIX,metacubex.one,代理
+  - DOMAIN-SUFFIX,gitbook.io,代理
+  # 今日头条 / 抖音：须在 Reject 之前；配合 china_ip6_route=1
+  - DOMAIN-SUFFIX,toutiao.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaoapi.com,DIRECT
+  - DOMAIN-SUFFIX,toutiaoimg.com,DIRECT
+  - DOMAIN-SUFFIX,snssdk.com,DIRECT
+  - DOMAIN-SUFFIX,ixigua.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.com,DIRECT
+  - DOMAIN-SUFFIX,bytedance.net,DIRECT
+  - DOMAIN-SUFFIX,byteimg.com,DIRECT
+  - DOMAIN-SUFFIX,bytecdntp.com,DIRECT
+  - DOMAIN-SUFFIX,bytescm.com,DIRECT
+  - DOMAIN-SUFFIX,volccdn.com,DIRECT
+  - DOMAIN-SUFFIX,douyin.com,DIRECT
+  - DOMAIN-SUFFIX,amemv.com,DIRECT
+  - DOMAIN-SUFFIX,bdstatic.com,DIRECT
+  - RULE-SET,Reject,REJECT
+  - RULE-SET,YouTube,代理
+  - RULE-SET,Telegram,代理
+  - RULE-SET,AppleMusic,代理
+  - RULE-SET,AppleTV,代理
+  - RULE-SET,Apple,DIRECT
+  - RULE-SET,GoogleFCM,DIRECT
+  - RULE-SET,PROXY,代理
+  - RULE-SET,Domestic,DIRECT
+  - GEOIP,CN,DIRECT
+  # 勿再加 IP-CIDR6,::/0,代理 —— 境外 IPv6 默认直连，翻墙靠上方规则
+  - MATCH,DIRECT
