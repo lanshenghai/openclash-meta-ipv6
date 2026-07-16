@@ -1,6 +1,6 @@
 # OpenClash / Mihomo `meta-ipv6` 调优记录
 
-面向：**FriendlyWrt / OpenClash + Mihomo（fake-ip）+ 双栈 IPv6** 软路由场景。  
+面向：**OpenWrt / OpenClash + Mihomo（fake-ip）+ 双栈 IPv6** 软路由场景。  
 本目录整理会话中修复 Access Check、YouTube/Telegram、头条、test-ipv6、IPv6 代理模式等问题后的**可分享配置与结论**。
 
 ## 目录内容
@@ -9,7 +9,7 @@
 |------|------|
 | `README.md` | 本说明（问题 → 根因 → 改动） |
 | `CHANGELOG.md` | 按主题汇总的改动清单 |
-| `meta-ipv6.yaml` | 脱敏后的 Clash Meta 配置样例 |
+| `meta-ipv6.yaml` | Clash Meta 配置样例 |
 | `OPENCLASH-UCI.md` | 必须配合的 OpenClash 界面 / UCI 项 |
 | `APPLY.md` | 部署步骤 |
 
@@ -17,7 +17,7 @@
 
 ## 适用环境（参考）
 
-- 软路由 OpenWrt/FriendlyWrt + OpenClash
+- 软路由 OpenWrt + OpenClash
 - 运行模式：`fake-ip`
 - IPv6：PPPoE 获前缀，LAN 下发 GUA；客户端双栈
 - 上游可能有光猫 / AC（本记录中为 H3C BR1008L + 软路由）
