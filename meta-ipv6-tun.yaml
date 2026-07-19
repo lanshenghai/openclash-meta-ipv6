@@ -1,22 +1,20 @@
-# OpenClash / Mihomo sample — sanitized for public sharing.
-# Replace REPLACE_* placeholders before use. See README.md / APPLY.md.
+# OpenClash / Mihomo sample — TUN mode (redir-host + sniffer)
+# Replace REPLACE_* placeholders before use. See README.md.
+# Do NOT add a manual `tun:` block — OpenClash injects it when en_mode=redir-host-tun.
 mode: rule
 allow-lan: true
-routing-mark: 0xff
-bind-address: '*'
+bind-address: 0.0.0.0
 ipv6: true
 external-controller: 0.0.0.0:9090
 external-ui: "/usr/share/openclash/ui"
 secret: REPLACE_DASHBOARD_SECRET
 dns:
   enable: true
-  # geosite:cn 等 filter 域名仍返回真实 AAAA；无 fake-ip-range6 则 fake-ip 域名不下发 AAAA
+  # redir-host：返回真实 A/AAAA；配合 sniffer 做域名分流
   ipv6: true
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  # 非 ULA，降低部分 Windows 丢弃 AAAA 的概率（勿用 fdfe: ULA）
-  fake-ip-range6: 2a0f:fafa:cafe::/64
+  enhanced-mode: redir-host
   listen: 0.0.0.0:7874
+  listen6: '[::]:7874'
   respect-rules: true
   nameserver-policy:
     geosite:cn:
@@ -38,51 +36,29 @@ dns:
     - https://dns.cloudflare.com/dns-query
     - tls://dns.google:853
     - https://1.1.1.1/dns-query
-  fake-ip-filter:
-    - "*.lan"
-    - "+.ntp.org"
-    - "+.cibntv.net"
-    - "*.mqtt.iothub.aliyuncs.com"
-    - "+.azurefd.net"
-    - "+.t-msedge.net"
-    - "+.msftconnecttest.com"
-    - "+.msftncsi.com"
-    # 按需保留办公/厂商内网（可删）
-    - "+.nokia-sbell.com"
-    - "+.nokia.com"
-    - "+.nsn-intra.net"
-    - "+.nsn-net.net"
-    - "+.pushnp.svc.ms"
-    - "+.svc.ms"
-    # OneDrive：勿进 fake-ip
-    - "+.live.com"
-    - "+.onedrive.com"
-    - "+.1drv.ms"
-    - "+.1drv.com"
-    - "+.sharepoint.com"
-    - "+.sharepointonline.com"
-    - "+.microsoftonline.com"
-    - "+.msauth.net"
-    - "+.msftauth.net"
-    - "+.windows.net"
-    - "+.graph.microsoft.com"
-    - "+.onedrive.microsoft.com"
-    - "+.cloudapp.azure.com"
-    - "+.office.net"
-    - "+.office.com"
-    - "+.windows.com"
-    - "+.office365.com"
-    - "+.trafficmanager.net"
-    # 必须 +. 才能覆盖 www/ipv6/ds 等子域
-    - "+.test-ipv6.com"
-    - geosite:cn
-  fake-ip-filter-mode: blacklist
   proxy-server-nameserver:
     - 202.101.172.35
     - 202.101.172.46
     - 114.114.114.114
     - 223.5.5.5
     - https://1.1.1.1/dns-query
+
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - "+.net"
+    - "+.com"
+    - "+.cn"
 
 experimental:
   sniff-tls-sni: true
@@ -187,7 +163,6 @@ rule-providers:
 
 rules:
   - IP-CIDR6,fe80::/10,DIRECT
-  - IP-CIDR,198.18.0.1/16,REJECT,no-resolve
   - IP-CIDR,127.0.0.0/8,DIRECT
   - IP-CIDR,172.16.0.0/12,DIRECT
   - IP-CIDR,192.168.0.0/16,DIRECT
@@ -219,6 +194,8 @@ rules:
   - DOMAIN-SUFFIX,graph.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,onedrive.microsoft.com,DIRECT
   - DOMAIN-SUFFIX,storage.live.com,DIRECT
+  # 大文件下载可直连，避免 LAN 侧 TUN 长连接不稳（按需保留）
+  - DOMAIN-SUFFIX,cursor.com,DIRECT
   - DOMAIN-SUFFIX,copilot.microsoft.com,代理
   - DOMAIN-SUFFIX,microsoft.com,代理
   - DOMAIN-SUFFIX,openai.com,代理
@@ -227,7 +204,6 @@ rules:
   - DOMAIN-SUFFIX,ai.com,代理
   - DOMAIN-SUFFIX,metacubex.one,代理
   - DOMAIN-SUFFIX,gitbook.io,代理
-  # 今日头条 / 抖音：须在 Reject 之前；配合 china_ip6_route=1
   - DOMAIN-SUFFIX,toutiao.com,DIRECT
   - DOMAIN-SUFFIX,toutiaoapi.com,DIRECT
   - DOMAIN-SUFFIX,toutiaoimg.com,DIRECT
@@ -252,5 +228,5 @@ rules:
   - RULE-SET,PROXY,代理
   - RULE-SET,Domestic,DIRECT
   - GEOIP,CN,DIRECT
-  # 勿再加 IP-CIDR6,::/0,代理 —— 境外 IPv6 默认直连，翻墙靠上方规则
-  - MATCH,DIRECT
+  # TUN 模式：未命中国内/直连规则的境外流量（含 IPv6）走代理
+  - MATCH,代理
