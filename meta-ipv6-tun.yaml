@@ -1,6 +1,6 @@
 # OpenClash / Mihomo sample — TUN mode (redir-host + sniffer)
 # Replace REPLACE_* placeholders before use. See README.md.
-# Do NOT add a manual `tun:` block — OpenClash injects it when en_mode=redir-host-tun.
+# tun: 与 en_mode=redir-host-tun 下运行时一致；OpenClash 启动时可能再合并/覆写部分字段。
 mode: rule
 allow-lan: true
 bind-address: 0.0.0.0
@@ -64,6 +64,21 @@ experimental:
   sniff-tls-sni: true
 profile:
   store-selected: true
+
+# TUN（需 OpenClash UCI: en_mode=redir-host-tun, stack_type=system）
+tun:
+  enable: true
+  stack: system
+  device: utun
+  mtu: 1400
+  dns-hijack:
+    - 127.0.0.1:53
+  endpoint-independent-nat: true
+  auto-route: false
+  auto-detect-interface: false
+  auto-redirect: false
+  strict-route: false
+  disable-icmp-forwarding: false
 
 proxies: []
 proxy-providers:
